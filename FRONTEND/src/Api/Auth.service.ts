@@ -1,12 +1,13 @@
 const apiUrl  = process.env.REACT_APP_API_URL;
 
-if (!apiUrl) {
-  console.error('REACT_APP_API_URL is not defined in environment variables');
-  throw new Error('API URL is not configured');
-}
+
+// if (!apiUrl) {
+//   console.error('REACT_APP_API_URL is not defined in environment variables');
+//   throw new Error('API URL is not configured');
+// }
 
 // Remove the console.log that was showing undefined
-// console.log(apiUrl);
+console.log("apiUrl",apiUrl);
 
 export enum UserStatus {
   ONLINE = 'online',

@@ -5,16 +5,20 @@ import { Model } from 'mongoose';
 import { CreateUserDto } from './dto/create.dto';
 import { UpdateUserDto } from './dto/update.dto';
 import { LoginDto } from './dto/login.dto';
-import { MinioService } from 'nestjs-minio-client';
+import { v2 as cloudinary } from 'cloudinary';
+import { Readable } from 'stream';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectModel(User.name)
-    private userModel: Model<User>,
-    private readonly minioClient: MinioService
+    private userModel: Model<User>
   ) {
-    this.initializeBucket();
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
   }
 
   async findAll(): Promise<User[]> {
@@ -105,41 +109,69 @@ export class UserService {
     return user.friends;
   }
 
-  private async initializeBucket() {
-    try {
-      const bucketExists = await this.minioClient.client.bucketExists('quickconnect-profilepic');
-      if (!bucketExists) {
-        await this.minioClient.client.makeBucket('quickconnect-profilepic');
-        console.log('Bucket created successfully');
-      }
-    } catch (error) {
-      console.error('Error initializing bucket:', error);
-    }
-  }
+  // async updateProfilePicture(userId: string, file: any) {
+  //   try {
+  //     const filename = `${userId}-${Date.now()}.${file.originalname.split('.').pop()}`;
+  
+  //     await this.minioClient.client.putObject(
+  //       'quickconnect-profilepic',
+  //       filename,
+  //       file.buffer,
+  //       file.size,
+  //       { 'Content-Type': file.mimetype }
+  //     );
+  
+  //     const imageUrl = await this.minioClient.client.presignedGetObject(
+  //       'quickconnect-profilepic',
+  //       filename
+  //     );
+  
+  //     return this.userModel.findByIdAndUpdate(
+  //       userId,
+  //       { profilePicture: imageUrl },
+  //       { new: true }
+  //     );
+  //   } catch (error) {
+  //     throw new Error('Failed to upload profile picture');
+  //   }
+  // }
 
   async updateProfilePicture(userId: string, file: any) {
     try {
-      const filename = `${userId}-${Date.now()}.${file.originalname.split('.').pop()}`;
-  
-      await this.minioClient.client.putObject(
-        'quickconnect-profilepic',
-        filename,
-        file.buffer,
-        file.size,
-        { 'Content-Type': file.mimetype }
-      );
-  
-      const imageUrl = await this.minioClient.client.presignedGetObject(
-        'quickconnect-profilepic',
-        filename
-      );
-  
-      return this.userModel.findByIdAndUpdate(
-        userId,
-        { profilePicture: imageUrl },
-        { new: true }
-      );
+      return new Promise((resolve, reject) => {
+        const upload = cloudinary.uploader.upload_stream(
+          {
+            folder: 'quickconnect-profilepic',
+            public_id: `user-${userId}`,
+            overwrite: true,
+            resource_type: 'auto'
+          },
+          async (error, result) => {
+            if (error) {
+              console.error('Upload error:', error);
+              reject(new Error('Failed to upload profile picture'));
+              return;
+            }
+
+            try {
+              const updatedUser = await this.userModel.findByIdAndUpdate(
+                userId,
+                { profilePicture: result.secure_url },
+                { new: true }
+              );
+              resolve(updatedUser);
+            } catch (dbError) {
+              reject(dbError);
+            }
+          }
+        );
+
+        // Create a stream from the file buffer and pipe it to Cloudinary
+        const stream = Readable.from(file.buffer);
+        stream.pipe(upload);
+      });
     } catch (error) {
+      console.error('Profile picture upload error:', error);
       throw new Error('Failed to upload profile picture');
     }
   }
