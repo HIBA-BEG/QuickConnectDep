@@ -244,6 +244,7 @@ export const userService = {
 
       const response = await fetch(`${apiUrl}/user/${userId}/profile-picture`, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
