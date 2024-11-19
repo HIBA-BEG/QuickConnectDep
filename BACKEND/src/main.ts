@@ -2,20 +2,20 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { FastifyAdapter,NestFastifyApplication} from '@nestjs/platform-fastify';
 import fastifyMultipart from '@fastify/multipart';
-import fastifyCors from '@fastify/cors';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
   app.enableCors({
     origin: [
+      'http://localhost:3000', 
       'https://quick-connect-dep.vercel.app',
-      'http://localhost:3000'
+      process.env.FRONTEND_URL,
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'X-Requested-With'],
-    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   
@@ -25,6 +25,7 @@ async function bootstrap() {
     }
   });
 
+  app.useWebSocketAdapter(new IoAdapter(app));
  
   const port = process.env.PORT || 3001;
   

@@ -5,6 +5,7 @@ import AllChatFiends from './AllFriends';
 import defaultProfileIcon from '../profileicon.jpg';
 import { io } from 'socket.io-client';
 import styled from 'styled-components';
+import { socketService } from '../services/socket.service';
 
 const ChatContainer = styled.div`
   flex: 2;
@@ -139,15 +140,6 @@ export interface Message {
   Friend?: string; 
 }
 
-const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-
-const socket = io(SOCKET_URL, {
-  transports: ['websocket', 'polling'],
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000,
-  withCredentials: true
-});
-
 const FriendsChat: React.FC<FriendsChatProps> = ({ currentUserId }) => {
   const [selectedFriend, setSelectedFriend] = useState<string | null>(null);
   const [selectedFriendData, setSelectedFriendData] = useState<User | null>(null);
@@ -172,7 +164,9 @@ const FriendsChat: React.FC<FriendsChatProps> = ({ currentUserId }) => {
   }, [selectedFriend, currentUserId]);
 
   useEffect(() => {
-    socket.on('receiveMessage', (data: { senderId: string; receiverId: string; message: string }) => {
+    socketService.emit('register', currentUserId);
+
+    socketService.on('receiveMessage', (data: { senderId: string; receiverId: string; message: string }) => {
       if (data.senderId === selectedFriend || data.receiverId === selectedFriend) {
         setMessages((prevMessages) => [
           ...prevMessages,
@@ -182,7 +176,7 @@ const FriendsChat: React.FC<FriendsChatProps> = ({ currentUserId }) => {
     });
 
     return () => {
-      socket.off('receiveMessage');
+      socketService.getSocket()?.off('receiveMessage');
     };
   }, [selectedFriend]);
 
@@ -198,7 +192,7 @@ const FriendsChat: React.FC<FriendsChatProps> = ({ currentUserId }) => {
         await conversationService.createConversation(currentUserId, selectedFriend, [newMessageData]);
   
         // Emit to socket
-        socket.emit('sendMessage', {
+        socketService.emit('sendMessage', {
           senderId: currentUserId,
           receiverId: selectedFriend,
           message: newMessage,
@@ -212,6 +206,12 @@ const FriendsChat: React.FC<FriendsChatProps> = ({ currentUserId }) => {
     }
   };
   
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   return (
     <FriendsWithChat>
@@ -256,6 +256,7 @@ const FriendsChat: React.FC<FriendsChatProps> = ({ currentUserId }) => {
             <Input
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
               placeholder="Type a message"
             />
             

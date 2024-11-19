@@ -242,10 +242,19 @@ export const userService = {
       const formData = new FormData();
       formData.append('profilePicture', file);
 
+      console.log('Uploading file:', {
+        name: file.name,
+        type: file.type,
+        size: file.size
+      });
+      
       const response = await fetch(`${apiUrl}/user/${userId}/profile-picture`, {
         method: 'POST',
         credentials: 'include',
         body: formData,
+        headers: {
+          'Accept': 'application/json',
+        }
       });
 
       if (!response.ok) {

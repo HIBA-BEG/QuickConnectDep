@@ -8,6 +8,7 @@ import { allInvitation } from '../../Api/invitationAPI/allInvitation';
 import { Invitation } from '../../Types/invitation';
 import { acceptedInvitation } from '../../Api/invitationAPI/acceptedInvetationApi';
 import { rejecteInvitation } from '../../Api/invitationAPI/rejectInvitationApi';
+import { socketService } from '../../services/socket.service';
 
 const ContainerForAll = styled.div`
   flex: 2;
@@ -136,23 +137,9 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
 
     console.log('Setting up WebSocket for user:', user.username, user._id);
 
-    const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    socketService.emit('register', user._id);
 
-    const newSocket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      withCredentials: true
-    });
-
-    newSocket.on('connect', () => {
-      // console.log('Connected to WebSocket server');
-      newSocket.emit('register', user._id);
-      // console.log('Emitted register event with userId:', user._id);
-
-    });
-
-    newSocket.on('friendRequest', (request) => {
+    socketService.on('friendRequest', (request) => {
       console.log('Received friend request via WebSocket:', request);
 
       setFriendRequests(prev => {
@@ -174,8 +161,13 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
     });
 
     // =====================invitation==================
-    newSocket.on('invitation', (invitation) => {
+    socketService.on('invitation', (invitation) => {
       console.log('Received group invitation via WebSocket:', invitation);
+      // Mettre à jour l'état des invitations, si vous voulez gérer une liste d'invitations
+      setInvitation(prev => {
+              const newRequests = [...prev, invitation];
+              return newRequests;
+      });
 
       Swal.fire({
         icon: 'info',
@@ -187,11 +179,6 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
         timer: 3000,
       });
 
-      // Mettre à jour l'état des invitations, si vous voulez gérer une liste d'invitations
-      setInvitation(prev => {
-        const newRequests = [...prev, invitation];
-        return newRequests;
-      });
     });
 
     // newSocket.on('error', (error) => {
@@ -202,11 +189,14 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
     //   console.log('Disconnected from WebSocket server');
     // });
 
-    setSocket(newSocket);
+    // setSocket(socketService);
 
     return () => {
-      // console.log('Cleaning up WebSocket connection');
-      newSocket.close();
+      const socket = socketService.getSocket();
+      if (socket) {
+        socket.off('friendRequest');
+        socket.off('invitation');
+      }
     };
   }, []);
 

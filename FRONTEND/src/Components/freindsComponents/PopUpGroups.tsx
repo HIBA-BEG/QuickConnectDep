@@ -7,31 +7,19 @@ import Swal from 'sweetalert2';
 import { io } from 'socket.io-client';
 import { userService } from '../../Api/User.service';
 import { getChannel } from '../../Api/channelAPI/getChannelApi';
+import { socketService } from '../../services/socket.service';
 
 export default function PopUpGroups({ onOpen, onClose, userId }: any) {
 
     const channelContext = useContext(ChannelContext);
     const channels = channelContext?.channels || [];
-
     const [groupId, setGroupId] = useState<string | string | number>()
     const user = JSON.parse(localStorage.getItem('user') || '{}');
 
     useEffect(() => {
-        const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+        socketService.emit('register', user._id);
 
-        const socket = io(SOCKET_URL, {
-            transports: ['websocket', 'polling'],
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            withCredentials: true
-        });
-
-        socket.on('connect', () => {
-            console.log('WebSocket connecté');
-            socket.emit('register', user._id);
-        });
-
-        socket.on('groupInvitation', (invitation) => {
+        socketService.on('groupInvitation', (invitation) => {
             Swal.fire({
                 icon: 'info',
                 title: 'Nouvelle Invitation',
@@ -46,7 +34,8 @@ export default function PopUpGroups({ onOpen, onClose, userId }: any) {
         });
 
         return () => {
-            socket.disconnect();
+            // socketService.disconnect();
+            socketService.getSocket()?.off('groupInvitation');
         };
     }, [user._id]);
 

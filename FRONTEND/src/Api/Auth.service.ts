@@ -33,11 +33,13 @@ export const loginUser = async (email: string): Promise<User> => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({ email }),
     });
 
     if (!response.ok) {
-      throw new Error('Login failed');
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
 
     return response.json();

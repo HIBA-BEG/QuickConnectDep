@@ -5,6 +5,7 @@ import { userService } from '../../Api/User.service';
 import Swal from 'sweetalert2';
 import { io, Socket } from 'socket.io-client';
 import defaultProfilePicture from '../../profileicon.jpg'
+import { socketService } from '../../services/socket.service';
 
 interface UserProps {
     user: User;
@@ -13,7 +14,6 @@ export default function SuggestionFreinds({ user }: UserProps) {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [userId, setUserId] = useState<string | number>('')
     const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set());
-    const [socket, setSocket] = useState<Socket | null>(null);
 
 
     const handleOpenPopup = (id: string | number) => {
@@ -24,22 +24,6 @@ export default function SuggestionFreinds({ user }: UserProps) {
     const handleClosePopup = () => {
         setIsPopupOpen(false);
     };
-
-    useEffect(() => {
-        const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-
-        const newSocket = io(SOCKET_URL, {
-            transports: ['websocket', 'polling'],
-            reconnectionAttempts: 5,
-            reconnectionDelay: 1000,
-            withCredentials: true
-        });
-        setSocket(newSocket);
-
-        return () => {
-            newSocket.disconnect();
-        };
-    }, []);
 
     const handleAddFriend = async (userId: string | number) => {
         try {
@@ -61,10 +45,10 @@ export default function SuggestionFreinds({ user }: UserProps) {
             setPendingRequests((prev) => new Set(prev).add(userId as string));
 
 
-            socket?.emit('friendRequest', {
+            socketService.emit('friendRequest', {
                 to: userId,
                 from: user._id,
-            });
+              });
 
             Swal.fire({
                 icon: 'success',

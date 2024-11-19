@@ -107,10 +107,18 @@ export class UserController {
     @Req() request: FastifyRequest
   ) {
     try {
+      console.log('Received profile picture upload request for user:', id);
+
       const file = await request.file();
       if (!file) {
         throw new BadRequestException('No file uploaded');
       }
+  
+      console.log('File received:', {
+        filename: file.filename,
+        mimetype: file.mimetype,
+        encoding: file.encoding
+      });
   
       const buffer = await file.toBuffer();
       const fileData = {
@@ -120,7 +128,8 @@ export class UserController {
         size: buffer.length
       };
   
-      return this.userService.updateProfilePicture(id, fileData);
+      const result = await this.userService.updateProfilePicture(id, fileData);
+      return result;
     } catch (error) {
       throw new HttpException(
         'Failed to upload profile picture',
