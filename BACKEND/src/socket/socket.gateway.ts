@@ -8,7 +8,16 @@ import {
   } from '@nestjs/websockets';
   import { Server, Socket } from 'socket.io';
   
-  @WebSocketGateway({ cors: true })
+  @WebSocketGateway({
+    cors: {
+      origin: [
+        'http://localhost:3000',
+        'https://quick-connect-dep.vercel.app'
+      ],
+      credentials: true
+    },
+    transports: ['websocket', 'polling']
+  })
   export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer()
     server: Server;

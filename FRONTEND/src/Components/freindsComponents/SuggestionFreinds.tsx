@@ -26,7 +26,14 @@ export default function SuggestionFreinds({ user }: UserProps) {
     };
 
     useEffect(() => {
-        const newSocket = io('http://localhost:3001');
+        const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+        const newSocket = io(SOCKET_URL, {
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            withCredentials: true
+        });
         setSocket(newSocket);
 
         return () => {

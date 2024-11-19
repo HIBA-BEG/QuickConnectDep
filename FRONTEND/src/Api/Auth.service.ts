@@ -33,6 +33,7 @@ export const loginUser = async (email: string): Promise<User> => {
       headers: {
         'Content-Type': 'application/json',
       },
+      credentials: 'include',
       body: JSON.stringify({ email }),
     });
 

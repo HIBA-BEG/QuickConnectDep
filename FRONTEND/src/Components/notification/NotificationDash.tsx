@@ -136,7 +136,14 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
 
     console.log('Setting up WebSocket for user:', user.username, user._id);
 
-    const newSocket = io('http://localhost:3001');
+    const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+    const newSocket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      withCredentials: true
+    });
 
     newSocket.on('connect', () => {
       // console.log('Connected to WebSocket server');
@@ -237,39 +244,39 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
     }
   };
   // ========================== acceptes invitation===================
- const handleAcceptInvitation = async(requestId: string | number)=>{
+  const handleAcceptInvitation = async (requestId: string | number) => {
 
-  try {
-
-    
-    await acceptedInvitation(requestId);
-    setInvitation(prev => prev.filter(req => req._id !== requestId));
-
-    await Swal.fire({
-      icon: 'success',
-      title: 'Invitation Accepted!',
-      text: 'You are now joind channel',
-      showConfirmButton: false,
-      timer: 1500,
-      position: 'top-end',
-      toast: true
-    });
+    try {
 
 
-  } catch (error) {
-    console.error('Error accepting invitation:', error);
+      await acceptedInvitation(requestId);
+      setInvitation(prev => prev.filter(req => req._id !== requestId));
 
-    await Swal.fire({
-      icon: 'error',
-      title: 'Oops...',
-      text: 'Failed to accept invitation',
-      showConfirmButton: true,
-      position: 'center'
-    });
+      await Swal.fire({
+        icon: 'success',
+        title: 'Invitation Accepted!',
+        text: 'You are now joind channel',
+        showConfirmButton: false,
+        timer: 1500,
+        position: 'top-end',
+        toast: true
+      });
+
+
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+
+      await Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Failed to accept invitation',
+        showConfirmButton: true,
+        position: 'center'
+      });
+    }
+
+
   }
-
-
- }
 
   const handleRejectRequest = async (requestId: string) => {
     try {
@@ -313,14 +320,14 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
   };
 
   // ========================rejected invetation=======================
-  const handleRejectInvitation = async(requestId: string | number)=>{
+  const handleRejectInvitation = async (requestId: string | number) => {
 
     try {
-  
-      
+
+
       await rejecteInvitation(requestId);
       setInvitation(prev => prev.filter(req => req._id !== requestId));
-  
+
       await Swal.fire({
         icon: 'success',
         title: 'Invitation Rejected!',
@@ -330,11 +337,11 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
         position: 'top-end',
         toast: true
       });
-  
-  
+
+
     } catch (error) {
       console.error('Error rejected invitation:', error);
-  
+
       await Swal.fire({
         icon: 'error',
         title: 'Oops...',
@@ -343,9 +350,9 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
         position: 'center'
       });
     }
-  
-  
-   }
+
+
+  }
 
   const handleFriendSelect = (friendId: string) => {
     console.log("Friend selected:", friendId);
@@ -367,7 +374,7 @@ const NotificationPage: React.FC<NotificationPageProps> = ({ currentUserId }) =>
   });
 
   console.log(sortedInvitation);
-  
+
 
 
 
