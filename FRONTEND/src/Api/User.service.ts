@@ -1,4 +1,4 @@
-const apiUrl = 'http://localhost:3001';
+const apiUrl = process.env.REACT_APP_API_URL;
 
 export enum UserStatus {
   ONLINE = 'online',
